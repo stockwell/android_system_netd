@@ -81,6 +81,9 @@ else ifeq ($(WIFI_DRIVER_MODULE_NAME),ar6000)
   endif
 LOCAL_C_INCLUDES += external/wpa_supplicant external/hostapd
 LOCAL_SRC_FILES += SoftapControllerATH.cpp
+else ifeq ($(WIFI_DRIVER_MODULE_NAME),libra)
+LOCAL_C_INCLUDES += external/wpa_supplicant external/hostapd
+LOCAL_SRC_FILES += SoftapControllerQC.cpp
 else
 LOCAL_SRC_FILES += SoftapController.cpp
 endif
@@ -89,6 +92,10 @@ endif
 LOCAL_SHARED_LIBRARIES := libsysutils libcutils libnetutils libcrypto libhardware_legacy
 
 ifeq ($(WIFI_DRIVER_MODULE_NAME),ar6000)
+LOCAL_SHARED_LIBRARIES := $(LOCAL_SHARED_LIBRARIES) libwpa_client
+endif
+
+ifeq ($(WIFI_DRIVER_MODULE_NAME),libra)
 LOCAL_SHARED_LIBRARIES := $(LOCAL_SHARED_LIBRARIES) libwpa_client
 endif
 
