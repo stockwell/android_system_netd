@@ -357,35 +357,24 @@ int wifi_connect_to_hostapd()
 		    LOGD("ifname %s is not ready, cnt=%d\n", ifname, cnt);
 	    }
     }
-    ctrl_conn = wpa_ctrl_open(ifname);
-    if (ctrl_conn == NULL) {
-        LOGI("Unable to open connection to hostapd on \"%s\": %s",
-             ifname, strerror(errno));
-        //return -1;
-    }
-    if (wpa_ctrl_attach(ctrl_conn) != 0) {
-        wpa_ctrl_close(ctrl_conn);
-        ctrl_conn = NULL;
-        return -1;
-    }
+    /* TODO: Actually connect to HOSTAPD. There is code on CAF which shows how to do this but  
+    * their implementation is much more complex than the Atheros implementation which this is
+    * based off of. I would imagine that it would only be in rare cases that users would change
+    * the softap settings, so they can live with having to restart it instead of having it change
+    * configuration on the fly.
+    */
+
     return 0;
 }
 
 void wifi_close_hostapd_connection()
 {
-    if (ctrl_conn != NULL) {
-        wpa_ctrl_close(ctrl_conn);
-        ctrl_conn = NULL;
-    }
+    // TODO: Implement function.
 }
 
 int wifi_load_profile(bool started)
 {
-    if ((started) && (mProfileValid)) {
-        if (ctrl_conn == NULL) {
-            return -1;
-        }
-    }
+    // TODO: Implement function
     return 0;
 }
 
@@ -480,7 +469,10 @@ int SoftapController::startDriver(char *iface) {
         goto end;
     }
 
-    //#TODO: Use device MAC address.
+    /* TODO: Use device MAC address. Maybe set mac_address to a property when loading the driver
+    * for station mode? Depends on how other devices with the Libra chip are able to obtain the
+    * MAC address. 
+    */
 
 	ret = insmod(WIFI_MODULE_EXT_PATH, "");
 
@@ -518,6 +510,8 @@ int SoftapController::stopDriver(char *iface) {
 	struct iwreq wrq;
 	int fnum, ret;
 
+    //TODO: Ensure BT is turned off before trying to stop the driver. If it is turned on it will fail when trying to unload the Libra driver.
+
 	LOGE("softapcontroller->stopDriver");
 	if (mSock < 0) {
 		LOGE("Softap driver stop - failed to open socket");
@@ -531,7 +525,7 @@ int SoftapController::stopDriver(char *iface) {
 	ret = rmmod("libra");
 	LOGD("Softap driver stop Libra: %d", ret);
     if(ret){
-        LOGD("Error stopping Libra - is Bluetooth turned on?");  //TODO: Turn off BT as well to avoid this condition
+        LOGD("Error stopping Libra - is Bluetooth turned on?");  
         return ret;
     }
     ret = rmmod("librasdioif");
@@ -573,7 +567,7 @@ int SoftapController::startSoftap() {
 	    usleep(100000);
 
         ret = wifi_connect_to_hostapd();
-        /*
+        
         if (ret < 0) {
             LOGE("Softap startap - connect to hostapd fails");
             return -1;
@@ -582,18 +576,18 @@ int SoftapController::startSoftap() {
         /* Indicate interface up */
 
         ret = wifi_load_profile(true);
-        /*if (ret < 0) {
+        if (ret < 0) {
             LOGE("Softap startap - load new configuration fails");
             return -1;
         }
         if (ret) {
             LOGE("Softap startap - failed: %d", ret);
         }
-        else {*/
+        else {
            mPid = pid;
            LOGD("Softap startap - Ok");
            usleep(AP_BSS_START_DELAY);
-        //}
+        }
     }
     return ret;
 
@@ -662,7 +656,7 @@ int SoftapController::setSoftap(int argc, char *argv[]) {
     int fnum, ret, i = 0;
     char *ssid;
     int fd;
-    char buf[80];
+    char buf[256];
     int len;
     if (mSock < 0) {
         LOGE("Softap set - failed to open socket");
@@ -673,7 +667,7 @@ int SoftapController::setSoftap(int argc, char *argv[]) {
         return -1;
     }
     ret = 0;
-
+    
     fd = open(HOSTAPD_CONFIG_FILE, O_CREAT|O_WRONLY|O_TRUNC, 0660);
     if (fd < 0) {
         LOGE("Cannot create \"%s\": %s", HOSTAPD_CONFIG_FILE, strerror(errno));
@@ -685,12 +679,15 @@ int SoftapController::setSoftap(int argc, char *argv[]) {
     write(fd, buf, len);
     len = snprintf(buf, sizeof(buf), "ctrl_interface=%s\n",IFACE_DIR);
     write(fd, buf, len);
+    len = snprintf(buf,sizeof(buf),"ht_capab=[LDPC] [HT40+] [GF] [SHORT-GI-20] [SHORT-GI-40] [TX-STBC] [RX-STBC1] [RX-STBC12] [RX-STBC123] [DELAYED-BA] [MAX-AMSDU-7935] [DSSS_CCK-40] [PSMP] [LSIG-TXOP-PROT]\n");
+    write(fd, buf, len);
     if (argc > 4) {
         len = snprintf(buf, sizeof(buf), "ssid=%s\n",argv[4]);
     } else {
         len = snprintf(buf, sizeof(buf), "ssid=AndroidAP\n");
     }
     /* set open auth */
+    
     write(fd, buf, len);
     len = snprintf(buf, sizeof(buf), "auth_algs=3\n");
     write(fd, buf, len);
@@ -725,13 +722,14 @@ int SoftapController::setSoftap(int argc, char *argv[]) {
         len = snprintf(buf, sizeof(buf), "channel=%d\n",WIFI_DEFAULT_CHANNEL);
         write(fd, buf, len);
     }
-    /*if (argc > 8) {
+    if (argc > 8) {
         len = snprintf(buf, sizeof(buf), "preamble=%s\n",argv[8]);
         write(fd, buf, len);
     } else {
         len = snprintf(buf, sizeof(buf), "preamble=%d\n",WIFI_DEFAULT_PREAMBLE);
         write(fd, buf, len);
-    }*/
+    }
+
     mProfileValid = 1;
 
     close(fd);
