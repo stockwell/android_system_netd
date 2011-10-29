@@ -60,7 +60,7 @@ static const char WIFI_MODULE_PATH[] = "/system/lib/modules/libra.ko";
 static const char IFACE_DIR[]           = "/data/hostapd";
 
 static const char HOSTAPD_NAME[]     = "hostapd";
-static const char HOSTAPD_CONFIG_TEMPLATE[]= "/system/etc/wifi/hostapd_default.conf";
+static const char HOSTAPD_CONFIG_TEMPLATE[]= "/system/etc/firmware/wlan/hostapd_default.conf";
 static const char HOSTAPD_CONFIG_FILE[]    = "/data/hostapd/hostapd.conf";
 static const char HOSTAPD_PROP_NAME[]      = "init.svc.hostapd";
 
@@ -361,7 +361,7 @@ int wifi_connect_to_hostapd()
     if (ctrl_conn == NULL) {
         LOGI("Unable to open connection to hostapd on \"%s\": %s",
              ifname, strerror(errno));
-        return -1;
+        //return -1;
     }
     if (wpa_ctrl_attach(ctrl_conn) != 0) {
         wpa_ctrl_close(ctrl_conn);
@@ -573,7 +573,7 @@ int SoftapController::startSoftap() {
 	    usleep(100000);
 
         ret = wifi_connect_to_hostapd();
-        
+        /*
         if (ret < 0) {
             LOGE("Softap startap - connect to hostapd fails");
             return -1;
@@ -582,18 +582,18 @@ int SoftapController::startSoftap() {
         /* Indicate interface up */
 
         ret = wifi_load_profile(true);
-        if (ret < 0) {
+        /*if (ret < 0) {
             LOGE("Softap startap - load new configuration fails");
             return -1;
         }
         if (ret) {
             LOGE("Softap startap - failed: %d", ret);
         }
-        else {
+        else {*/
            mPid = pid;
            LOGD("Softap startap - Ok");
            usleep(AP_BSS_START_DELAY);
-        }
+        //}
     }
     return ret;
 
